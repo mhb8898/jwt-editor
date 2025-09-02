@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JWT Editor — In‑Browser</title>
+  <meta name="description" content="Edit, verify, and (re)sign JWTs entirely in your browser. Works on GitHub Pages." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>JWT Editor</h1>
+    <div class="header-actions">
+      <a class="small" href="https://github.com" target="_blank" rel="noopener">GitHub Pages ready</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="panel token-panel">
+      <div class="panel-header">
+        <h2>Token</h2>
+        <div class="panel-actions">
+          <button id="btn-copy-token" class="ghost">Copy</button>
+          <button id="btn-clear" class="ghost">Clear</button>
+        </div>
+      </div>
+      <textarea id="token-input" placeholder="Paste or edit a JWT here (header.payload.signature)"></textarea>
+      <div id="token-status" class="status"></div>
+    </section>
+
+    <section class="panel editor-panel">
+      <div class="cols">
+        <div class="col">
+          <div class="panel-header tight">
+            <h3>Header (JSON)</h3>
+            <div class="panel-actions">
+              <button id="btn-pretty-header" class="ghost small">Pretty</button>
+            </div>
+          </div>
+          <textarea id="header-json" spellcheck="false" placeholder='{"alg":"HS256","typ":"JWT"}'></textarea>
+        </div>
+        <div class="col">
+          <div class="panel-header tight">
+            <h3>Payload (JSON)</h3>
+            <div class="panel-actions">
+              <button id="btn-pretty-payload" class="ghost small">Pretty</button>
+            </div>
+          </div>
+          <textarea id="payload-json" spellcheck="false" placeholder='{"sub":"1234567890","name":"John Doe","iat":1516239022}'></textarea>
+          <div id="claims-human" class="claims"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel sign-panel">
+      <div class="panel-header">
+        <h2>Sign / Verify</h2>
+      </div>
+      <div class="rows">
+        <div class="row">
+          <label for="alg">Algorithm</label>
+          <select id="alg">
+            <option value="HS256">HS256 (HMAC-SHA256)</option>
+            <option value="HS384">HS384 (HMAC-SHA384)</option>
+            <option value="HS512">HS512 (HMAC-SHA512)</option>
+            <option value="none">none (no signature)</option>
+          </select>
+          <button id="btn-use-header-alg" class="ghost small">Use header.alg</button>
+        </div>
+        <div class="row">
+          <label for="secret">Secret</label>
+          <input id="secret" type="text" placeholder="HMAC secret (UTF‑8)" />
+          <label class="inline"><input id="secret-b64" type="checkbox" /> secret is base64</label>
+        </div>
+        <div class="row actions">
+          <button id="btn-verify" class="primary">Verify</button>
+          <button id="btn-sign" class="secondary">Sign</button>
+          <span id="verify-result" class="badge"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel parts-panel">
+      <div class="panel-header tight">
+        <h3>Parts</h3>
+      </div>
+      <div class="cols">
+        <div class="col">
+          <label>Header (Base64URL)</label>
+          <input id="part-header" type="text" readonly />
+        </div>
+        <div class="col">
+          <label>Payload (Base64URL)</label>
+          <input id="part-payload" type="text" readonly />
+        </div>
+        <div class="col">
+          <label>Signature (Base64URL)</label>
+          <input id="part-signature" type="text" readonly />
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <span>All processing happens locally in your browser.</span>
+  </footer>
+
+  <script src="app.js"></script>
+  <noscript>Your browser needs JavaScript to use this tool.</noscript>
+</body>
+</html>
