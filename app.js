@@ -27,6 +27,14 @@
   const exampleSelect = document.getElementById('example-select');
   const btnLoadExample = document.getElementById('btn-load-example');
   const btnGenKeys = document.getElementById('btn-gen-keys');
+  // HS separate verify secret toggle
+  const hsSeparate = document.getElementById('hs-separate');
+  const secretVerifyInput = document.getElementById('secret-verify');
+  // Asymmetric key inputs
+  const hsKeys = document.getElementById('hs-keys');
+  const asymKeys = document.getElementById('asym-keys');
+  const pubkeyText = document.getElementById('pubkey');
+  const privkeyText = document.getElementById('privkey');
 
   // Utilities
   const enc = new TextEncoder();
@@ -89,12 +97,21 @@
     if (cat === 'HS'){
       hsKeys && hsKeys.classList.remove('hidden');
       asymKeys && asymKeys.classList.add('hidden');
+      // HS verify secret row visibility
+      if (hsSeparate) {
+        const row = document.getElementById('hs-keys-verify');
+        if (row) row.classList.toggle('hidden', !hsSeparate.checked);
+      }
     } else if (cat === 'RS' || cat === 'PS' || cat === 'ED'){
       hsKeys && hsKeys.classList.add('hidden');
       asymKeys && asymKeys.classList.remove('hidden');
+      const row = document.getElementById('hs-keys-verify');
+      if (row) row.classList.add('hidden');
     } else {
       hsKeys && hsKeys.classList.add('hidden');
       asymKeys && asymKeys.classList.add('hidden');
+      const row = document.getElementById('hs-keys-verify');
+      if (row) row.classList.add('hidden');
     }
   }
   function ab2b64(arr){ return b64encode(u8(arr)); }
@@ -215,47 +232,7 @@
     throw new Error('Key generation not required for this algorithm');
   }
 
-  // PEM helpers
-  function ab2b64(arr){ return b64encode(u8(arr)); }
-  function b64ToPem(b64, label){
-    const lines = b64.match(/.{1,64}/g).join('\n');
-    return `-----BEGIN ${label}-----\n${lines}\n-----END ${label}-----`;
-  }
-  async function exportKeyPEM(format, key, label){
-    const buf = await crypto.subtle.exportKey(format, key);
-    return b64ToPem(ab2b64(new Uint8Array(buf)), label);
-  }
-
-  async function generateKeysForAlg(alg){
-    const cat = algCategory(alg);
-    if (cat === 'RS'){
-      const kp = await crypto.subtle.generateKey({
-        name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048,
-        publicExponent: new Uint8Array([0x01,0x00,0x01]), hash: 'SHA-256'
-      }, true, ['sign','verify']);
-      const pubPem = await exportKeyPEM('spki', kp.publicKey, 'PUBLIC KEY');
-      const pk8Pem = await exportKeyPEM('pkcs8', kp.privateKey, 'PRIVATE KEY');
-      return {pubPem, pk8Pem};
-    }
-    if (cat === 'PS'){
-      const kp = await crypto.subtle.generateKey({
-        name: 'RSA-PSS', modulusLength: 2048,
-        publicExponent: new Uint8Array([0x01,0x00,0x01]), hash: 'SHA-256'
-      }, true, ['sign','verify']);
-      const pubPem = await exportKeyPEM('spki', kp.publicKey, 'PUBLIC KEY');
-      const pk8Pem = await exportKeyPEM('pkcs8', kp.privateKey, 'PRIVATE KEY');
-      return {pubPem, pk8Pem};
-    }
-    if (cat === 'ED'){
-      try{
-        const kp = await crypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign','verify']);
-        const pubPem = await exportKeyPEM('spki', kp.publicKey, 'PUBLIC KEY');
-        const pk8Pem = await exportKeyPEM('pkcs8', kp.privateKey, 'PRIVATE KEY');
-        return {pubPem, pk8Pem};
-      }catch(e){ throw new Error('Ed25519 keygen unsupported in this browser'); }
-    }
-    throw new Error('Key generation not required for this algorithm');
-  }
+  // (Removed duplicate helper block)
 
   function timingSafeEqual(a, b){
     const ua = u8(a), ub = u8(b);
@@ -442,7 +419,7 @@
       const signingInputStr = `${parts.headerB64}.${parts.payloadB64}`;
       let ok = false;
       if (cat === 'HS'){
-        const secret = secretInput.value;
+        const secret = hsSeparate && hsSeparate.checked ? (secretVerifyInput?.value || '') : secretInput.value;
         if (!secret){ showWarnBadge('Enter secret to verify'); return; }
         let keyBytes;
         try{ keyBytes = secretIsB64.checked ? fromBase64Url(secret) : enc.encode(secret); }
@@ -517,12 +494,22 @@
   secretIsB64.addEventListener('change', () => { clearBadge(); debounceSign(); saveState(); debounceVerify(); });
   pubkeyText && pubkeyText.addEventListener('input', () => { clearBadge(); debounceSign(); debounceVerify(); });
   privkeyText && privkeyText.addEventListener('input', () => { clearBadge(); debounceSign(); debounceVerify(); });
+  hsSeparate && hsSeparate.addEventListener('change', () => { setKeyInputsVisibility(); debounceVerify(); });
+  secretVerifyInput && secretVerifyInput.addEventListener('input', () => { clearBadge(); debounceVerify(); });
 
   btnSign.addEventListener('click', async () => {
     try{
-      if (algSelect.value === 'none'){ updateTokenFromEditors(''); setStatus('Signed with alg "none"'); return; }
-      const sig = await computeSignatureIfHmac();
-      if (sig === null){ setStatus('Provide valid JSON and secret to sign'); return; }
+      const alg = algSelect.value;
+      if (alg === 'none'){ updateTokenFromEditors(''); setStatus('Signed with alg "none"'); return; }
+      const cat = algCategory(alg);
+      let sig = null;
+      if (cat === 'HS'){
+        sig = await computeSignatureIfHmac();
+        if (sig === null){ setStatus('Provide valid JSON and secret to sign'); return; }
+      } else if (cat === 'RS' || cat === 'PS' || cat === 'ED'){
+        sig = await computeSignatureIfAsym();
+        if (!sig){ setStatus('Provide valid JSON and private key to sign'); return; }
+      } else { setStatus('Unsupported algorithm'); return; }
       updateTokenFromEditors(sig);
       setStatus('Signed');
       clearBadge();
@@ -533,8 +520,8 @@
 
   btnUseHeaderAlg.addEventListener('click', () => {
     const [h] = parseJSONSafe(headerText.value || '{}');
-    if (h && h.alg && ['HS256','HS384','HS512','none'].includes(h.alg)){
-      algSelect.value = h.alg; saveState(); debounceSign();
+    if (h && h.alg && ['HS256','HS384','HS512','RS256','RS384','RS512','PS256','PS384','PS512','EdDSA','none'].includes(h.alg)){
+      algSelect.value = h.alg; saveState(); setKeyInputsVisibility(); debounceSign();
     } else {
       setStatus('No valid header.alg found');
     }

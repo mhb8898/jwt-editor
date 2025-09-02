@@ -78,6 +78,11 @@
           <label for="secret">Secret</label>
           <input id="secret" type="text" placeholder="HMAC secret (UTF‑8)" />
           <label class="inline"><input id="secret-b64" type="checkbox" /> secret is base64</label>
+          <label class="inline"><input id="hs-separate" type="checkbox" /> separate verify secret</label>
+        </div>
+        <div id="hs-keys-verify" class="row hidden">
+          <label for="secret-verify">Verify Secret</label>
+          <input id="secret-verify" type="text" placeholder="Verify secret (UTF‑8)" />
         </div>
         <div id="asym-keys" class="row hidden">
           <div class="col full">
