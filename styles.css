@@ -26,7 +26,9 @@ body{
 }
 .app-footer{border-top:1px solid var(--border); border-bottom:none; color:var(--muted)}
 .app-header h1{margin:0; font-size:18px}
+.header-actions{display:flex; align-items:center; gap:10px}
 .header-actions .small{color:var(--muted); text-decoration:none}
+
 
 .container{max-width:1100px; margin:0 auto; padding:18px; display:grid; gap:16px}
 .panel{background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:12px}
@@ -83,4 +85,3 @@ button:disabled{opacity:.6; cursor:not-allowed}
 .highlight-ok{outline:2px solid rgba(52,211,153,.3)}
 .highlight-bad{outline:2px solid rgba(248,113,113,.3)}
 .highlight-warn{outline:2px solid rgba(251,191,36,.3)}
-
