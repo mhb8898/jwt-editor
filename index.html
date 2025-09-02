@@ -80,6 +80,28 @@
       </div>
     </section>
 
+    <section class="panel examples-panel">
+      <div class="panel-header tight">
+        <h3>Examples</h3>
+      </div>
+      <div class="rows">
+        <div class="row">
+          <label for="example-select">Preset</label>
+          <select id="example-select">
+            <option value="HS256">HS256 — sample header/payload + secret</option>
+            <option value="RS256">RS256 — sample header/payload (generate RSA keys)</option>
+            <option value="PS256">PS256 — sample header/payload (generate RSA-PSS keys)</option>
+            <option value="EdDSA">EdDSA — sample header/payload (generate Ed25519 keys)</option>
+          </select>
+          <button id="btn-load-example" class="secondary">Load Example</button>
+          <button id="btn-gen-keys" class="ghost">Generate Keys</button>
+        </div>
+        <div class="row">
+          <small class="muted">Key generation runs locally and fills the Public/Private fields above.</small>
+        </div>
+      </div>
+    </section>
+
     <section class="panel parts-panel">
       <div class="panel-header tight">
         <h3>Parts</h3>

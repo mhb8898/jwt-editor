@@ -79,6 +79,7 @@ button:disabled{opacity:.6; cursor:not-allowed}
 
 .claims{margin-top:6px; color:var(--muted); font-size:12px}
 .claims code{color:var(--accent)}
+.muted{color:var(--muted)}
 
 .parts-panel input{width:100%}
 

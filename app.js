@@ -24,6 +24,9 @@
   const btnPrettyPayload = $('#btn-pretty-payload');
   const btnCopyToken = $('#btn-copy-token');
   const btnClear = $('#btn-clear');
+  const exampleSelect = document.getElementById('example-select');
+  const btnLoadExample = document.getElementById('btn-load-example');
+  const btnGenKeys = document.getElementById('btn-gen-keys');
 
   // Utilities
   const enc = new TextEncoder();
@@ -64,6 +67,48 @@
     const [obj, err] = parseJSONSafe(text);
     if (err) return null;
     return pretty(obj);
+  }
+
+  // PEM helpers
+  function ab2b64(arr){ return b64encode(u8(arr)); }
+  function b64ToPem(b64, label){
+    const lines = b64.match(/.{1,64}/g).join('\n');
+    return `-----BEGIN ${label}-----\n${lines}\n-----END ${label}-----`;
+  }
+  async function exportKeyPEM(format, key, label){
+    const buf = await crypto.subtle.exportKey(format, key);
+    return b64ToPem(ab2b64(new Uint8Array(buf)), label);
+  }
+
+  async function generateKeysForAlg(alg){
+    const cat = algCategory(alg);
+    if (cat === 'RS'){
+      const kp = await crypto.subtle.generateKey({
+        name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048,
+        publicExponent: new Uint8Array([0x01,0x00,0x01]), hash: 'SHA-256'
+      }, true, ['sign','verify']);
+      const pubPem = await exportKeyPEM('spki', kp.publicKey, 'PUBLIC KEY');
+      const pk8Pem = await exportKeyPEM('pkcs8', kp.privateKey, 'PRIVATE KEY');
+      return {pubPem, pk8Pem};
+    }
+    if (cat === 'PS'){
+      const kp = await crypto.subtle.generateKey({
+        name: 'RSA-PSS', modulusLength: 2048,
+        publicExponent: new Uint8Array([0x01,0x00,0x01]), hash: 'SHA-256'
+      }, true, ['sign','verify']);
+      const pubPem = await exportKeyPEM('spki', kp.publicKey, 'PUBLIC KEY');
+      const pk8Pem = await exportKeyPEM('pkcs8', kp.privateKey, 'PRIVATE KEY');
+      return {pubPem, pk8Pem};
+    }
+    if (cat === 'ED'){
+      try{
+        const kp = await crypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign','verify']);
+        const pubPem = await exportKeyPEM('spki', kp.publicKey, 'PUBLIC KEY');
+        const pk8Pem = await exportKeyPEM('pkcs8', kp.privateKey, 'PRIVATE KEY');
+        return {pubPem, pk8Pem};
+      }catch(e){ throw new Error('Ed25519 keygen unsupported in this browser'); }
+    }
+    throw new Error('Key generation not required for this algorithm');
   }
 
   function timingSafeEqual(a, b){
@@ -361,6 +406,59 @@
     setStatus('');
     clearBadge();
     saveState();
+  });
+
+  // Examples UI
+  btnLoadExample.addEventListener('click', async () => {
+    const ex = exampleSelect.value;
+    if (ex === 'HS256'){
+      headerText.value = pretty({alg:'HS256',typ:'JWT'});
+      payloadText.value = pretty({sub:'123',name:'Alice',iat:1516239022});
+      algSelect.value = 'HS256';
+      secretInput.value = 'secret';
+      secretIsB64.checked = false;
+      setKeyInputsVisibility();
+      debounceSign();
+      setStatus('Loaded HS256 example');
+      return;
+    }
+    if (ex === 'RS256'){
+      headerText.value = pretty({alg:'RS256',typ:'JWT'});
+      payloadText.value = pretty({sub:'123',name:'Alice'});
+      algSelect.value = 'RS256';
+      setKeyInputsVisibility();
+      updateTokenFromEditors('');
+      setStatus('Loaded RS256 example — generate or paste keys to sign/verify');
+      return;
+    }
+    if (ex === 'PS256'){
+      headerText.value = pretty({alg:'PS256',typ:'JWT'});
+      payloadText.value = pretty({sub:'123',name:'Alice'});
+      algSelect.value = 'PS256';
+      setKeyInputsVisibility();
+      updateTokenFromEditors('');
+      setStatus('Loaded PS256 example — generate or paste keys to sign/verify');
+      return;
+    }
+    if (ex === 'EdDSA'){
+      headerText.value = pretty({alg:'EdDSA',typ:'JWT'});
+      payloadText.value = pretty({sub:'123',name:'Alice'});
+      algSelect.value = 'EdDSA';
+      setKeyInputsVisibility();
+      updateTokenFromEditors('');
+      setStatus('Loaded EdDSA example — generate or paste keys to sign/verify');
+      return;
+    }
+  });
+
+  btnGenKeys.addEventListener('click', async () => {
+    const alg = exampleSelect.value;
+    try{
+      const {pubPem, pk8Pem} = await generateKeysForAlg(alg);
+      pubkeyText.value = pubPem;
+      privkeyText.value = pk8Pem;
+      setStatus('Generated keys and filled fields');
+    }catch(e){ setStatus(e.message || 'Key generation error'); }
   });
 
   // Init
