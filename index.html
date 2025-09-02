@@ -63,14 +63,35 @@
             <option value="HS256">HS256 (HMAC-SHA256)</option>
             <option value="HS384">HS384 (HMAC-SHA384)</option>
             <option value="HS512">HS512 (HMAC-SHA512)</option>
+            <option value="RS256">RS256 (RSASSA-PKCS1-v1_5 + SHA-256)</option>
+            <option value="RS384">RS384 (RSASSA-PKCS1-v1_5 + SHA-384)</option>
+            <option value="RS512">RS512 (RSASSA-PKCS1-v1_5 + SHA-512)</option>
+            <option value="PS256">PS256 (RSA-PSS + SHA-256)</option>
+            <option value="PS384">PS384 (RSA-PSS + SHA-384)</option>
+            <option value="PS512">PS512 (RSA-PSS + SHA-512)</option>
+            <option value="EdDSA">EdDSA (Ed25519)</option>
             <option value="none">none (no signature)</option>
           </select>
           <button id="btn-use-header-alg" class="ghost small">Use header.alg</button>
         </div>
-        <div class="row">
+        <div id="hs-keys" class="row">
           <label for="secret">Secret</label>
           <input id="secret" type="text" placeholder="HMAC secret (UTF‑8)" />
           <label class="inline"><input id="secret-b64" type="checkbox" /> secret is base64</label>
+        </div>
+        <div id="asym-keys" class="row hidden">
+          <div class="col full">
+            <label for="pubkey">Public Key (PEM or JWK)</label>
+            <textarea id="pubkey" spellcheck="false" placeholder="-----BEGIN PUBLIC KEY-----
+...
+-----END PUBLIC KEY-----"></textarea>
+          </div>
+          <div class="col full">
+            <label for="privkey">Private Key (PEM or JWK)</label>
+            <textarea id="privkey" spellcheck="false" placeholder="-----BEGIN PRIVATE KEY-----
+...
+-----END PRIVATE KEY-----"></textarea>
+          </div>
         </div>
         <div class="row actions">
           <button id="btn-verify" class="primary">Verify</button>

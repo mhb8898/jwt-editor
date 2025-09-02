@@ -47,6 +47,7 @@ body{
 
 .cols{display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px}
 .cols .col{display:flex; flex-direction:column; gap:6px}
+.col.full{grid-column:1/-1}
 
 @media (max-width: 900px){
   .cols{grid-template-columns:1fr}
@@ -54,6 +55,7 @@ body{
 
 .rows{display:flex; flex-direction:column; gap:10px}
 .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+.row.hidden{display:none}
 .row.actions{justify-content:flex-start}
 label{color:var(--muted)}
 label.inline{display:flex; align-items:center; gap:6px}
