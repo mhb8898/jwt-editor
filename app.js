@@ -109,6 +109,8 @@ async function signCurrent(){
     updatePartsDisplay(headerB64, payloadB64, signatureB64);
     updateClaimsHuman(pp);
     setStatus('Signed');
+    // Auto-verify the freshly signed token
+    await verifyCurrent();
     saveState();
   }catch(e){ setStatus(e?.message || 'Sign error'); updatePreviewOnly(); }
 }
@@ -215,4 +217,3 @@ setKeyInputsVisibility();
 if (tokenInput.value){ tokenInput.dispatchEvent(new Event('input')); }
 else if (headerText.value || payloadText.value){ debounceSign(); }
 else { headerText.value='{"alg":"HS256","typ":"JWT"}'; payloadText.value='{"sub":"1234567890","name":"John Doe","iat":1516239022}'; debounceSign(); }
-
