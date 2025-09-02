@@ -1,6 +1,6 @@
 # JWT Editor (In‑Browser)
 
-A lightweight, client‑only JWT editor you can host on GitHub Pages. Decode, edit, verify, and (re)sign JSON Web Tokens using the Web Crypto API — no servers, no tracking.
+A lightweight, client‑only JWT editor. Decode, edit, verify, and (re)sign JSON Web Tokens using the Web Crypto API — no servers, no tracking.
 
 ## Features
 
@@ -18,17 +18,7 @@ Note: `alg: "none"` is supported for assembling unsigned tokens (with a clear wa
 
 Simply open `index.html` in a modern browser (no build step needed).
 
-## Deploy to GitHub Pages
-
-1. Create a new GitHub repository (or use an existing one).
-2. Add these files to the root of the repository and push.
-3. In the repo settings, enable GitHub Pages:
-   - Settings → Pages → Build and deployment
-   - Source: Deploy from a branch
-   - Branch: `main` (or `master`), folder `/ (root)`
-4. Wait for the page to build, then visit the provided `https://<your-username>.github.io/<repo>/` URL.
-
-Alternatively, place the site under a `docs/` folder and set Pages to serve from `docs`.
+ 
 
 ## Security notes
 
