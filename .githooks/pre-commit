@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Running unit tests (node --test)..."
+if ! node --test; then
+  echo "\nTests failed. Commit aborted." >&2
+  exit 1
+fi
+
+echo "All tests passed. Proceeding with commit."
+
