@@ -77,6 +77,15 @@
     return pretty(obj);
   }
 
+  function syncHeaderAlgToSelection(){
+    const alg = algSelect.value;
+    const [h, err] = parseJSONSafe(headerText.value || '{}');
+    if (!err && h && typeof h === 'object'){
+      h.alg = alg;
+      try{ headerText.value = JSON.stringify(h, null, 2); }catch{}
+    }
+  }
+
   // Algorithm category + key import/sign/verify helpers
   const ALG_CATS = {
     HS: ['HS256','HS384','HS512'],
@@ -209,14 +218,15 @@
 
   async function generateKeysForAlg(alg){
     const cat = algCategory(alg);
+    const hash = getHashForAlg(alg) || 'SHA-256';
     if (cat === 'RS'){
-      const kp = await crypto.subtle.generateKey({ name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1,0,1]), hash: 'SHA-256' }, true, ['sign','verify']);
+      const kp = await crypto.subtle.generateKey({ name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1,0,1]), hash }, true, ['sign','verify']);
       const pubPem = await exportKeyPEM('spki', kp.publicKey, 'PUBLIC KEY');
       const pk8Pem = await exportKeyPEM('pkcs8', kp.privateKey, 'PRIVATE KEY');
       return {pubPem, pk8Pem};
     }
     if (cat === 'PS'){
-      const kp = await crypto.subtle.generateKey({ name: 'RSA-PSS', modulusLength: 2048, publicExponent: new Uint8Array([1,0,1]), hash: 'SHA-256' }, true, ['sign','verify']);
+      const kp = await crypto.subtle.generateKey({ name: 'RSA-PSS', modulusLength: 2048, publicExponent: new Uint8Array([1,0,1]), hash }, true, ['sign','verify']);
       const pubPem = await exportKeyPEM('spki', kp.publicKey, 'PUBLIC KEY');
       const pk8Pem = await exportKeyPEM('pkcs8', kp.privateKey, 'PRIVATE KEY');
       return {pubPem, pk8Pem};
@@ -389,6 +399,23 @@
     return toBase64Url(sigBytes);
   }
 
+  // Compute signature for RS*/PS*/EdDSA using current header/payload and private key
+  async function computeSignatureIfAsym(){
+    const alg = algSelect.value;
+    const cat = algCategory(alg);
+    if (!(cat === 'RS' || cat === 'PS' || cat === 'ED')) return null;
+    const [h, he] = parseJSONSafe(headerText.value || '{}');
+    const [p, pe] = parseJSONSafe(payloadText.value || '{}');
+    if (he || pe) return null;
+    const hB64 = toBase64Url(enc.encode(JSON.stringify(h)));
+    const pB64 = toBase64Url(enc.encode(JSON.stringify(p)));
+    const signingInput = `${hB64}.${pB64}`;
+    try{
+      const sig = await signAsymmetric(alg, signingInput);
+      return sig || null;
+    }catch(e){ setStatus(e && e.message ? e.message : 'Sign error'); return null; }
+  }
+
   async function verifyCurrentToken(){
     clearBadge();
     const tok = tokenInput.value.trim();
@@ -489,7 +516,7 @@
 
   headerText.addEventListener('input', () => { clearBadge(); debounceSign(); });
   payloadText.addEventListener('input', () => { clearBadge(); debounceSign(); });
-  algSelect.addEventListener('change', () => { clearBadge(); setKeyInputsVisibility(); debounceSign(); saveState(); debounceVerify(); });
+  algSelect.addEventListener('change', () => { clearBadge(); syncHeaderAlgToSelection(); setKeyInputsVisibility(); debounceSign(); saveState(); debounceVerify(); });
   secretInput.addEventListener('input', () => { clearBadge(); debounceSign(); debounceVerify(); });
   secretIsB64.addEventListener('change', () => { clearBadge(); debounceSign(); saveState(); debounceVerify(); });
   pubkeyText && pubkeyText.addEventListener('input', () => { clearBadge(); debounceSign(); debounceVerify(); });
@@ -599,7 +626,7 @@
   });
 
   btnGenKeys.addEventListener('click', async () => {
-    const alg = exampleSelect.value;
+    const alg = algSelect.value; // generate keys for current selected algorithm
     try{
       const {pubPem, pk8Pem} = await generateKeysForAlg(alg);
       pubkeyText.value = pubPem;
